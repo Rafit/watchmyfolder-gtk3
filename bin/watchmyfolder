@@ -1,3 +1,4 @@
 #!/bin/sh
-cd ./watch
-./watch-my-folder.py
+
+# start watchmyfolder
+/usr/share/watchmyfolder/watch-my-folder.py

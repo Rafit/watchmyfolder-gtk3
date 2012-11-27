@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Watch My Folder
+Comment=Simple 1:1 backup program
+Exec=/usr/bin/watchmyfolder
+Icon=/usr/share/pixmaps/watchmyfolder.png
+Terminal=false
+MultipleArgs=false
+Type=Application
+Categories=Application;System;
+StartupNotify=true
+Name[en_AU]=watchmyfolder
+Comment[en_AU.UTF-8]=Simple 1:1 backup program

@@ -65,7 +65,7 @@ class watch_my_folder(Gtk.Builder):
     """ Initialise Main Window """
     def __init__(self):
         self.builder = Gtk.Builder()
-        self.builder.add_from_file("watch-my-folder.ui")
+        self.builder.add_from_file("/usr/share/watchmyfolder/watch-my-folder.ui")
         self.window = self.builder.get_object("main_window")
         self.window.set_title("Watch My Folder")
         self.window.connect("delete-event", self.delete_event)
@@ -80,7 +80,7 @@ class watch_my_folder(Gtk.Builder):
         # Show all of the stuff
         self.window.show_all()
         # Make a status icon
-        self.statusicon = Gtk.StatusIcon.new_from_file('watch.png')
+        self.statusicon = Gtk.StatusIcon.new_from_file('/usr/share/pixmaps/watchmyfolder.png')
         self.statusicon.connect('activate', self.status_clicked )
         self.statusicon.set_tooltip_text("Watch My Folder")
         #self.window.hide()
@@ -177,7 +177,7 @@ class watch(Process):
             profile_var = os.getenv("HOME")
             user_var = os.getenv("USER")
             comp_var = socket.gethostname()
-            conf_file = 'config-linux.txt'
+            conf_file = '/usr/share/watchmyfolder/config-linux.txt'
         else:
             STOP = True
         # Read config values
