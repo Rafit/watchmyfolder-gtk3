@@ -1,0 +1,25 @@
+[conf]
+
+# Input Folder #
+FolderPath = %userprofile%
+
+# Destination Folder #
+BackupPath = ..\.backup\%computername%
+
+# Skip files with the following file types #
+SkipFiles = $RECYCLE.BIN RECYCLER .backup .pst .ost .mp3 .avi .iso .mpg .msi .exe .mpeg .aac .wav .mp4 .wma .mov .mod .mts .tmp .dat .xbel .old .deleted .db  .automaticDestinations-ms .customDestinations-ms .oab
+
+# Skip folders that contain the following paths #
+SkipFolders =    \Google\Chrome\User Data    \AppData\Local\Temp    \AppData\Local\Apps    \Microsoft\Windows\Temporary Internet Files    \Microsoft\CryptnetUrlCache    \Windows\History\History.IE5    \Windows\Cookies    \payloads_rocky    \iTunes\Album Artwork\Cache    \Mozilla\Firefox\Profiles    \.backup
+
+# Time to wait between opening the next folder #
+WaitTime = 3
+
+# Create Shadow Copies for basic versioning #
+BackupEnabled = True
+MonitorDeletion = True
+
+# Linux style hidden files/folders #
+SkipTildeFiles = True
+SkipHiddenFiles = True
+SkipHiddenFolders = True

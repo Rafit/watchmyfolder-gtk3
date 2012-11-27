@@ -1,0 +1,15 @@
+Install
+-------
+git clone https://github.com/lachlan-00/Watch-My-Folder.git
+cd Watch-My-Folder
+configure.bat
+
+(Optional for portable installs)
+Extract watch\GTK2-Runtime.zip
+Extract Python\Python.zip
+
+
+Requirements
+------------
+ * Python 2.7
+ * GTK2
