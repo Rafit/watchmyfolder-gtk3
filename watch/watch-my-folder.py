@@ -70,7 +70,7 @@ class watch_my_folder(Gtk.Builder):
         self.window.set_title("Watch My Folder")
         self.window.connect("delete-event", self.delete_event)
         self.statuslabel = self.builder.get_object("statuslabel")
-        self.statuslabel.set_text('Scan Running')
+        self.statuslabel.set_text('Running')
         self.quitbutton = self.builder.get_object("quitbutton")
         self.quitbutton.connect("clicked", self.quit)
         self.startbutton = self.builder.get_object("startbutton")
@@ -94,7 +94,7 @@ class watch_my_folder(Gtk.Builder):
 
     def start_scan(self, *args):
         """ Start the scan process separate of the GUI """
-        self.statuslabel.set_text('Scan Running')
+        self.statuslabel.set_text('Running')
         global STOP
         if not self.worker:
             self.worker = WorkerThread(self)
@@ -111,7 +111,7 @@ class watch_my_folder(Gtk.Builder):
     def stop_scan(self, *args):
         """ Stop the scan process """
         global STOP
-        self.statuslabel.set_text('Scan Stopped')
+        self.statuslabel.set_text('Stopped')
         if not self.worker:
             self.worker = WorkerThread(self)
         # Tell us if the process is stopping/stopped already
