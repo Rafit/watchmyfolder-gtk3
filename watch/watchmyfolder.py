@@ -111,20 +111,20 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.checkconfig()
         self.conf = ConfigParser.RawConfigParser()
         self.readconfig()
-        # prep and show main window
-        self.statuslabel.set_text('Running')
-        self.window.show_all()
         # Make a status icon
         icon = '/usr/share/pixmaps/watchmyfolder.png'
         self.statusicon = Gtk.StatusIcon.new_from_file(icon)
         self.statusicon.connect('activate', self.status_clicked )
         self.statusicon.set_tooltip_text("Watch My Folder")
-        if self.starthidden:
-            self.window.hide()
         # Start main function first
+        self.statuslabel.set_text('Running')
         self.worker = None
         if not self.worker:
             self.worker = WorkerThread(self)
+        if self.starthidden:
+            self.window.hide()
+        else:
+            self.window.show_all()
         # Start the Gtk main loop
         Gtk.main()
 
@@ -158,7 +158,6 @@ class WATCHMYFOLDER(Gtk.Builder):
             self.worker._stop.set()
             print 'stopping'
         return
-                
 
     def quit(self, button):
         """ Close down the program and quit the main loop """
@@ -172,13 +171,11 @@ class WATCHMYFOLDER(Gtk.Builder):
         Gtk.main_quit()
         return False
 
-
     def delete_event(self, window, event):
         """ Hide the window then the close button is clicked """
         # Don't delete; hide instead
         self.window.hide_on_delete()
         return True
- 
 
     def status_clicked(self, status):
         """ hide and unhide the window when clicking the status icon """
@@ -191,17 +188,17 @@ class WATCHMYFOLDER(Gtk.Builder):
     def readconfig(self, *args):
         """ read config and load values """
         self.conf.read(xdg_config_dirs[0] + '/watchmyfolder.conf')
-        self.inputfolder = self.conf.get('conf', 'FolderPath')
-        self.outputfolder = self.conf.get('conf', 'BackupPath')
-        self.skipfiles = self.conf.get('conf', 'SkipFiles')
-        self.skipfolders = self.conf.get('conf', 'SkipFolders')
-        self.waittime = int(self.conf.get('conf', 'WaitTime'))
-        self.enabletilde = self.conf.get('conf', 'SkipTildeFiles')
-        self.enableskipfolder = self.conf.get('conf', 'SkipHiddenFolders')
-        self.enableskipfile = self.conf.get('conf', 'SkipHiddenFiles')
-        self.enablebackup = self.conf.get('conf', 'BackupEnabled')
-        self.enablewatchdelete = self.conf.get('conf', 'MonitorDeletion')
-        self.starthidden = self.conf.get('conf', 'AutoHide')
+        self.inputfolder = self.conf.get('conf', 'folderpath')
+        self.outputfolder = self.conf.get('conf', 'backuppath')
+        self.skipfiles = self.conf.get('conf', 'skipfiles')
+        self.skipfolders = self.conf.get('conf', 'skipfolders')
+        self.waittime = int(self.conf.get('conf', 'waittime'))
+        self.enabletilde = self.conf.get('conf', 'skiptildefiles')
+        self.enableskipfolder = self.conf.get('conf', 'skiphiddenfolders')
+        self.enableskipfile = self.conf.get('conf', 'skiphiddenfiles')
+        self.enablebackup = self.conf.get('conf', 'backupenabled')
+        self.enablewatchdelete = self.conf.get('conf', 'monitordeletion')
+        self.starthidden = self.conf.get('conf', 'autohide')
         if self.enablebackup == 'True':
             self.enablebackup = True
         else:
@@ -223,7 +220,7 @@ class WATCHMYFOLDER(Gtk.Builder):
             self.enableskipfolder = True
         else:
             self.enableskipfolder = False
-        if self.conf.get('conf', 'AutoHide') == 'True':
+        if self.conf.get('conf', 'autohide') == 'True':
             self.starthidden = True
         else:
             self.starthidden = False
@@ -249,23 +246,23 @@ class WATCHMYFOLDER(Gtk.Builder):
     def saveconf(self, *args):
         """ save any config changes and update live settings"""
         self.conf.read(xdg_config_dirs[0] + '/watchmyfolder.conf')
-        self.conf.set('conf', 'FolderPath', self.inputentry.get_text())
-        self.conf.set('conf', 'BackupPath', self.backupentry.get_text())
-        self.conf.set('conf', 'WaitTime', self.waittimeentry.get_text())
-        self.conf.set('conf', 'SkipFiles', self.skipfilesentry.get_text())
-        self.conf.set('conf', 'SkipFolders',
+        self.conf.set('conf', 'folderpath', self.inputentry.get_text())
+        self.conf.set('conf', 'backuppath', self.backupentry.get_text())
+        self.conf.set('conf', 'waittime', self.waittimeentry.get_text())
+        self.conf.set('conf', 'skipfiles', self.skipfilesentry.get_text())
+        self.conf.set('conf', 'skipfolders',
                           self.skipfoldersentry.get_text())
-        self.conf.set('conf', 'SkipTildeFiles',
+        self.conf.set('conf', 'skiptildefiles',
                           str(self.tildecheck.get_active()))
-        self.conf.set('conf', 'BackupEnabled',
+        self.conf.set('conf', 'backupenabled',
                           self.backupcheck.get_active())
-        self.conf.set('conf', 'MonitorDeletion',
+        self.conf.set('conf', 'monitordeletion',
                           str(self.watchdeletecheck.get_active()))
-        self.conf.set('conf', 'SkipHiddenFolders',
-                          self.hiddenfilecheck.get_active())
-        self.conf.set('conf', 'SkipHiddenFiles',
+        self.conf.set('conf', 'skiphiddenfolders',
                           self.hiddenfoldercheck.get_active())
-        self.conf.set('conf', 'AutoHide',
+        self.conf.set('conf', 'skiphiddenfiles',
+                          self.hiddenfilecheck.get_active())
+        self.conf.set('conf', 'autohide',
                           self.starthiddencheck.get_active())
         # write to conf file
         conffile = open(xdg_config_dirs[0] + '/watchmyfolder.conf', "w")
@@ -279,27 +276,20 @@ class WATCHMYFOLDER(Gtk.Builder):
         """ create a default config if not available """
         if not os.path.isfile(xdg_config_dirs[0] + '/watchmyfolder.conf'):
             conffile = open(xdg_config_dirs[0] + '/watchmyfolder.conf', "w")
-            conffile.write("[conf]\n\n# Input Folder #\nFolderPath = /home/" +
-                           "$USER\n# Destination Folder #\nBackupPath = " +
-                           "$HOME/.backup/$HOSTNAME\n\n# Skip files with the" +
-                           " following file types #\nSkipFiles = .backup " +
-                           ".hdrive .pst .ost .mp3 .avi .iso .mpg .msi .exe " +
-                           ".mpeg .aac .wav .mp4 .wma .mov .mod .mts .tmp " +
-                           ".dat .xbel .old .deleted .db .xsession-errors " +
-                           ".bash_history .esd_auth .lock .ICEauthority " +
-                           ".pulse-cookie application_state\n\n# Skip fold" +
-                           "ers that contain the following paths #\nSkipFol" +
-                           "ders =    /drive_c    /dosdevices    /.config/go" +
-                           "ogle-chrome/Default    /.cache    /.csync    /.m" +
-                           "ozilla/firefox    /.fontconfig    /.thumbnails  " +
-                           "  /.local/share/Trash    /.backup    /.gvfs    /" +
-                           ".dbus\n\n# Time to wait between opening the next" +
-                           " folder #\nWaitTime = 3\n\n# Create Shadow Copie" +
-                           "s for basic versioning #\nBackupEnabled = True\n" +
-                           "MonitorDeletion = True\n\n# Linux style hidden f" +
-                           "iles/folders #\nSkipTildeFiles = True\nSkipHidde" +
-                           "nFiles = True\nSkipHiddenFolders = True\nAutoHid" +
-                           "e = False")
+            conffile.write("[conf]\nfolderpath = /home/$USER\nbackuppath = " +
+                           "$HOME/.backup/$HOSTNAME\nskipfiles = .backup " +
+                           ".pst .ost .mp3 .avi .iso .mpg .msi .exe .mpeg  " +
+                           ".aac .wav .mp4 .wma .mov .mod .mts .tmp .dat .xb" +
+                           "el .old .deleted .db .xsession-errors .bash_hist" +
+                           "ory .esd_auth .lock .ICEauthority .pulse-cookie " +
+                           "application_state\nskipfolders =    /drive_c    " +
+                           "/dosdevices    /.config/google-chrome/Default   " +
+                           " /.cache    /.csync    /.mozilla/firefox    /.fo" +
+                           "ntconfig    /.thumbnails    /.local/share/Trash " +
+                           "   /.backup    /.gvfs    /.dbus\nwaittime = 3\nb" +
+                           "ackupenabled = True\nmonitordeletion = True\nski" +
+                           "ptildefiles = True\nskiphiddenfiles = True\nskip" +
+                           "hiddenfolders = True\nautohide = False")
             conffile.close()
         return
 
@@ -336,50 +326,50 @@ class WATCH(Process):
         # Read config values
         self.conf = ConfigParser.RawConfigParser()
         self.conf.read(conf_file)
-        self.skip_files = self.conf.get('conf', 'SkipFiles').split(' ')
-        self.skip_dirs = self.conf.get('conf', 'SkipFolders').split('    ')
-        if self.conf.get('conf', 'MonitorDeletion') == 'True':
+        self.skip_files = self.conf.get('conf', 'skipfiles').split(' ')
+        self.skip_dirs = self.conf.get('conf', 'skipfolders').split('    ')
+        try:
+            self.wait_time = int(self.conf.get('conf', 'waittime'))
+        except:
+            self.wait_time = 2
+        if self.conf.get('conf', 'monitordeletion') == 'True':
             self.check_delete = True
         else:
             self.check_delete = False
-        if self.conf.get('conf', 'BackupEnabled') == "True":
+        if self.conf.get('conf', 'backupenabled') == "True":
             self.backup_enabled = True
         else:
             self.backup_enabled = False
-        try:
-            self.wait_time = int(self.wait_time)
-        except:
-            self.wait_time = 1
-        if self.conf.get('conf', 'SkipTildeFiles') == 'True':
+        if self.conf.get('conf', 'skiptildefiles') == 'True':
             self.skip_tilde =  True
         else:
             self.skip_tilde =  False
-        if self.conf.get('conf', 'SkipHiddenFiles') == 'True':
+        if self.conf.get('conf', 'skiphiddenfiles') == 'True':
             self.skip_hidden_files = True
         else:
             self.skip_hidden_files = False
-        if self.conf.get('conf', 'SkipHiddenFolders') == 'True':
+        if self.conf.get('conf', 'skiphiddenfolders') == 'True':
             self.skip_hidden_dirs = True
         else:
             self.skip_hidden_dirs = False
-        self.destin = self.conf.get('conf', 'BackupPath')
-        self.orig_dir = self.conf.get('conf', 'FolderPath')
+        self.destin = self.conf.get('conf', 'backuppath')
+        self.orig_dir = self.conf.get('conf', 'folderpath')
         # Set OS specific config values
         if os.name == 'nt':
-            self.destin = self.destin.replace('%username%', 
+            self.destin = self.destin.replace('%username%',
                                                         user_var)
-            self.orig_dir = self.orig_dir.replace('%username%', 
+            self.orig_dir = self.orig_dir.replace('%username%',
                                                           user_var)
-            self.destin = self.destin.replace('%computername%', 
+            self.destin = self.destin.replace('%computername%',
                                                         comp_var)
-            self.orig_dir = self.orig_dir.replace('%computername%', 
+            self.orig_dir = self.orig_dir.replace('%computername%',
                                                           comp_var)
             self.destin = self.destin.replace('%userprofile%', profile_var)
-            self.orig_dir = self.orig_dir.replace('%userprofile%', 
+            self.orig_dir = self.orig_dir.replace('%userprofile%',
                                                           profile_var)
             if not homeshare == None:
                 self.destin = self.destin.replace('%homeshare%', homeshare)
-                self.orig_dir = self.orig_dir.replace('%homeshare%', 
+                self.orig_dir = self.orig_dir.replace('%homeshare%',
                                                               homeshare)
             self.skip_tilde = False
         if os.name == 'posix':
@@ -400,7 +390,6 @@ class WATCH(Process):
             self.orig_dir = profile_var
         # Used to strip useless folders from the backup path
         ORIGINAL_DIR = self.orig_dir
-        
 
     def check_file(self, *args):
         """ File operation Function """
@@ -424,7 +413,7 @@ class WATCH(Process):
                             pass
         for items in insplit:
             outdir = outdir + self.slash + items
-        backup_file = (os.path.normpath(backup_path + outdir + self.slash + 
+        backup_file = (os.path.normpath(backup_path + outdir + self.slash +
                         (os.path.basename(in_file))))
         backup_dir = os.path.dirname(backup_file)
         # Only backup files that contain data
@@ -447,29 +436,29 @@ class WATCH(Process):
                 pass
         elif os.path.isfile(backup_file):
             # Compare files and backup modified versions since the last cycle.
-            if (not os.stat(in_file)[6] == os.stat(backup_file)[6] or 
+            if (not os.stat(in_file)[6] == os.stat(backup_file)[6] or
                 os.stat(in_file)[8] > os.stat(backup_file)[8]):
                 new_file = backup_file
                 new_count = 0
                 # Create new destination (for versioning)
                 while os.path.isfile(new_file):
                     if new_count == 6:
-                        five = (os.path.join(os.path.dirname(new_file), 
-                                             (os.path.basename(new_file) + 
+                        five = (os.path.join(os.path.dirname(new_file),
+                                             (os.path.basename(new_file) +
                                              '-5.old')))
-                        zero = (os.path.join(os.path.dirname(new_file), 
-                                             (os.path.basename(new_file) + 
+                        zero = (os.path.join(os.path.dirname(new_file),
+                                             (os.path.basename(new_file) +
                                              '-0.old')))
                         shutil.copy2(five, zero)
                         temp_count = ['1', '2', '3', '4', '5']
                         for count in temp_count:
                             temp = '-' + count + '.old'
-                            os.remove(os.path.join(os.path.dirname(new_file), 
+                            os.remove(os.path.join(os.path.dirname(new_file),
                                                   (os.path.basename(new_file) +
                                                   temp)))
                         new_count = 1
                     temp = '-' + str(new_count) + '.old'
-                    old_file = os.path.join(os.path.dirname(new_file), 
+                    old_file = os.path.join(os.path.dirname(new_file),
                                            (os.path.basename(new_file) + temp))
                     if not os.path.isfile(old_file):
                         new_file = old_file
@@ -534,14 +523,14 @@ class WATCH(Process):
                                 if items[-1] == '~':
                                     skipme = True
                     # Run check_file if a file is found
-                    if (os.path.isfile(os.path.join(input_dir, items)) and 
+                    if (os.path.isfile(os.path.join(input_dir, items)) and
                             not skipme):
-                        self.check_file(os.path.join(input_dir, items), 
+                        self.check_file(os.path.join(input_dir, items),
                                         backup_path)
                     # Run check_folder if a folder is found
-                    if (os.path.isdir(os.path.join(input_dir, items)) and 
+                    if (os.path.isdir(os.path.join(input_dir, items)) and
                             not skipme):
-                        self.check_folder(os.path.join(input_dir, items), 
+                        self.check_folder(os.path.join(input_dir, items),
                                           backup_path)
             # Ignore Inaccessible Directories
             except:
