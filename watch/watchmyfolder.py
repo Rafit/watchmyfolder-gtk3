@@ -606,17 +606,17 @@ class WATCH(Process):
             STARTED = True
             while 1 and not STOP:
                 time.sleep(self.wait_time)
-                #try:
-                if not os.path.exists(self.destin):
-                    os.makedirs(self.destin)
-                if not os.path.exists(self.ORIGINAL_DIR):
-                    os.makedirs(self.ORIGINAL_DIR)
-                shutil.copystat(self.ORIGINAL_DIR, self.destin)
-                self.watch_folder(self.destin, self.ORIGINAL_DIR)
-                #self.watch_deletions(self.destin, self.ORIGINAL_DIR)
-                #except:
-                #    # Skip error when directory is missing
-                #    pass
+                try:
+                    if not os.path.exists(self.destin):
+                        os.makedirs(self.destin)
+                    if not os.path.exists(self.ORIGINAL_DIR):
+                        os.makedirs(self.ORIGINAL_DIR)
+                    shutil.copystat(self.ORIGINAL_DIR, self.destin)
+                    self.watch_folder(self.destin, self.ORIGINAL_DIR)
+                    self.watch_deletions(self.destin, self.ORIGINAL_DIR)
+                except:
+                    # Skip error when directory is missing
+                    pass
                 try:
                     print ''
                 except exceptions.AttributeError:
