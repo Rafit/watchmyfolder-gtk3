@@ -304,7 +304,6 @@ class WATCH(Process):
     """ Class that controls the scan process """
     def __init__(self):
         global STOP
-        global ORIGINAL_DIR
         if STOP:
             return
         # Set default file names according to OS
@@ -388,19 +387,16 @@ class WATCH(Process):
                                self.slash + 'BACKUP')
         if not os.path.isdir(self.orig_dir):
             self.orig_dir = profile_var
-        # Used to strip useless folders from the backup path
-        ORIGINAL_DIR = self.orig_dir
 
     def check_file(self, *args):
         """ File operation Function """
         global STOP
-        global ORIGINAL_DIR
         if STOP:
             return
         in_file = args[0]
         backup_path = args[1]
         insplit = os.path.dirname(in_file).split(self.slash)
-        orig_dir =  ORIGINAL_DIR.split(self.slash)
+        orig_dir =  self.orig_dir.split(self.slash)
         outdir = ''
         # Remove the base folder from the backup base path
         for items in orig_dir:
@@ -427,7 +423,9 @@ class WATCH(Process):
                 try:
                     os.makedirs(backup_dir)
                     shutil.copystat(os.path.dirname(in_file), backup_dir)
-                except:
+                except Exception, err:
+                    #print err
+                    #print 'debug1'
                     pass
             try:
                 shutil.copy2(in_file, backup_file)
@@ -509,7 +507,9 @@ class WATCH(Process):
                 print 'skipping ' + items
         if not skip_me and not STOP:
             try:
-                for items in os.listdir(input_dir):
+                tmp_dir = os.listdir(input_dir)
+                tmp_dir.sort(key=lambda y: y.lower())
+                for items in tmp_dir:
                     skipme = False
                     for ignored in self.skip_files:
                         # Don't try to process blank items
@@ -533,7 +533,9 @@ class WATCH(Process):
                         self.check_folder(os.path.join(input_dir, items),
                                           backup_path)
             # Ignore Inaccessible Directories
-            except:
+            except Exception, err:
+                #print err
+                #print 'debug2'
                 # Error: Inaccessible Directory
                 pass
         return
@@ -546,7 +548,9 @@ class WATCH(Process):
         if self.check_delete:
             backup_folder = args[0]
             source_folder = args[1]
-            for items in os.listdir(backup_folder):
+            tmp_dir = os.listdir(backup_folder)
+            tmp_dir.sort(key=lambda y: y.lower())
+            for items in tmp_dir:
                 if STOP:
                     return
                 tmp_backup = os.path.join(backup_folder, items)
@@ -581,14 +585,15 @@ class WATCH(Process):
                             # recheck when folder is found
                             if not tmp_backup[-8:] == skip_list[1]:
                                 self.watch_deletions(tmp_backup, tmp_source)
-                    except:
+                    except Exception, err:
+                        #print err
+                        #print 'debug3'
                         pass
         return True
 
     def main(self, *args):
         """ Main Function """
         global STOP
-        global ORIGINAL_DIR
         if STOP:
             return
         while 1 and not STOP:
@@ -601,12 +606,15 @@ class WATCH(Process):
                 shutil.copystat(self.orig_dir, self.destin)
                 self.watch_folder(self.destin, self.orig_dir)
                 self.watch_deletions(self.destin, self.orig_dir)
-            except:
+            except Exception, err:
+                #print err
+                #print 'debug4'
                 # Skip error when directory is missing
                 pass
             try:
                 print ''
             except exceptions.AttributeError:
+                print '614'
                 pass
 
 if __name__ == "__main__":
