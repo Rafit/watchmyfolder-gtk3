@@ -48,9 +48,6 @@ class WorkerThread(threading.Thread):
         self._want_abort = 0
         self._stop = threading.Event()
         self.setDaemon(True)
-        # This starts the thread running on creation, but you could
-        # also make the GUI thread responsible for calling this
-        self.start()
         return None
 
     def run(self):
@@ -88,6 +85,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.applybutton = self.builder.get_object("applyconf")
         self.closebutton = self.builder.get_object("closeconf")
         self.starthiddencheck = self.builder.get_object("starthiddencheck")
+        self.autoruncheck = self.builder.get_object("runcheck")
         self.inputfolder = None
         self.outputfolder = None
         self.skipfiles = None
@@ -118,10 +116,12 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.statusicon.connect('activate', self.status_clicked)
         self.statusicon.set_tooltip_text("Watch My Folder")
         # Start main function first
-        self.statuslabel.set_text('Running')
+        self.statuslabel.set_text('Waiting...')
         self.worker = None
         if not self.worker:
             self.worker = WorkerThread(self)
+        if self.autorun:
+            self.start_scan()
         if self.starthidden:
             self.window.hide()
         else:
@@ -135,7 +135,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         global STOP
         if not self.worker:
             self.worker = WorkerThread(self)
-        # Attempt to stop the watch process
+        # Attempt to start the watch process
         try:
             STOP = False
             self.worker.start()
@@ -199,6 +199,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.enablebackup = self.conf.get('conf', 'backupenabled')
         self.enablewatchdelete = self.conf.get('conf', 'monitordeletion')
         self.starthidden = self.conf.get('conf', 'autohide')
+        self.autorun = self.conf.get('conf', 'autorun')
         if self.enablebackup == 'True':
             self.enablebackup = True
         else:
@@ -220,10 +221,14 @@ class WATCHMYFOLDER(Gtk.Builder):
             self.enableskipfolder = True
         else:
             self.enableskipfolder = False
-        if self.conf.get('conf', 'autohide') == 'True':
+        if self.starthidden == 'True':
             self.starthidden = True
         else:
             self.starthidden = False
+        if self.autorun == 'True':
+            self.autorun = True
+        else:
+            self.autorun = False
         return
 
     def showconfig(self, *args):
@@ -240,6 +245,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.hiddenfilecheck.set_active(self.enableskipfile)
         self.hiddenfoldercheck.set_active(self.enableskipfolder)
         self.starthiddencheck.set_active(self.starthidden)
+        self.autoruncheck.set_active(self.autorun)
         self.confwindow.show()
         return
 
@@ -264,6 +270,8 @@ class WATCHMYFOLDER(Gtk.Builder):
                           self.hiddenfilecheck.get_active())
         self.conf.set('conf', 'autohide',
                           self.starthiddencheck.get_active())
+        self.conf.set('conf', 'autorun',
+                          self.autoruncheck.get_active())
         # write to conf file
         conffile = open(xdg_config_dirs[0] + '/watchmyfolder.conf', "w")
         self.conf.write(conffile)
@@ -289,7 +297,8 @@ class WATCHMYFOLDER(Gtk.Builder):
                            "   /.backup    /.gvfs    /.dbus\nwaittime = 3\nb" +
                            "ackupenabled = True\nmonitordeletion = True\nski" +
                            "ptildefiles = True\nskiphiddenfiles = True\nskip" +
-                           "hiddenfolders = True\nautohide = False")
+                           "hiddenfolders = True\nautohide = False\nautorun " +
+                           "= False")
             conffile.close()
         return
 
