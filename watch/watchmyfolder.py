@@ -314,22 +314,10 @@ class WATCH(Process):
         global STOP
         if STOP:
             return
-        # Set default file names according to OS
-        if os.name == 'nt':
-            profile_var = os.getenv("userprofile")
-            user_var = os.getenv("username")
-            comp_var = os.getenv("computername")
-            homeshare = os.getenv("homeshare")
-            conf_file = 'config-windows.txt'
-            self.slash = '\\'
-        elif os.name == 'posix':
-            profile_var = os.getenv("HOME")
-            user_var = os.getenv("USER")
-            comp_var = socket.gethostname()
-            conf_file = xdg_config_dirs[0] + '/watchmyfolder.conf'
-            self.slash = '/'
-        else:
-            STOP = True
+        profile_var = os.getenv("HOME")
+        user_var = os.getenv("USER")
+        comp_var = socket.gethostname()
+        conf_file = xdg_config_dirs[0] + '/watchmyfolder.conf'
         # Read config values
         self.conf = ConfigParser.RawConfigParser()
         self.conf.read(conf_file)
@@ -361,38 +349,19 @@ class WATCH(Process):
             self.skip_hidden_dirs = False
         self.destin = self.conf.get('conf', 'backuppath')
         self.orig_dir = self.conf.get('conf', 'folderpath')
-        # Set OS specific config values
-        if os.name == 'nt':
-            self.destin = self.destin.replace('%username%',
-                                                        user_var)
-            self.orig_dir = self.orig_dir.replace('%username%',
-                                                          user_var)
-            self.destin = self.destin.replace('%computername%',
-                                                        comp_var)
-            self.orig_dir = self.orig_dir.replace('%computername%',
-                                                          comp_var)
-            self.destin = self.destin.replace('%userprofile%', profile_var)
-            self.orig_dir = self.orig_dir.replace('%userprofile%',
-                                                          profile_var)
-            if not homeshare == None:
-                self.destin = self.destin.replace('%homeshare%', homeshare)
-                self.orig_dir = self.orig_dir.replace('%homeshare%',
-                                                              homeshare)
-            self.skip_tilde = False
-        if os.name == 'posix':
-            self.destin = self.destin.replace('$USER', user_var)
-            self.orig_dir = self.orig_dir.replace('$USER', user_var)
-            self.destin = self.destin.replace('$HOSTNAME', comp_var)
-            self.orig_dir = self.orig_dir.replace('$HOSTNAME', comp_var)
-            self.destin = self.destin.replace('$HOME', profile_var)
-            self.orig_dir = self.orig_dir.replace('$HOME', profile_var)
+        # parse through variables
+        self.destin = self.destin.replace('$USER', user_var)
+        self.orig_dir = self.orig_dir.replace('$USER', user_var)
+        self.destin = self.destin.replace('$HOSTNAME', comp_var)
+        self.orig_dir = self.orig_dir.replace('$HOSTNAME', comp_var)
+        self.destin = self.destin.replace('$HOME', profile_var)
+        self.orig_dir = self.orig_dir.replace('$HOME', profile_var)
         # Attempt to make the backup path
         if not os.path.isdir(self.destin):
             try:
                 os.makedirs(self.destin)
             except:
-                self.destin = (profile_var + self.slash + '.backup' +
-                               self.slash + 'BACKUP')
+                self.destin = (profile_var + '/.backup/BACKUP')
         if not os.path.isdir(self.orig_dir):
             self.orig_dir = profile_var
 
@@ -403,8 +372,8 @@ class WATCH(Process):
             return
         in_file = args[0]
         backup_path = args[1]
-        insplit = os.path.dirname(in_file).split(self.slash)
-        orig_dir = self.orig_dir.split(self.slash)
+        insplit = os.path.dirname(in_file).split('/')
+        orig_dir = self.orig_dir.split('/')
         outdir = ''
         # Remove the base folder from the backup base path
         for items in orig_dir:
@@ -416,8 +385,8 @@ class WATCH(Process):
                         except ValueError:
                             pass
         for items in insplit:
-            outdir = outdir + self.slash + items
-        backup_file = (os.path.normpath(backup_path + outdir + self.slash +
+            outdir = outdir + '/' + items
+        backup_file = (os.path.normpath(backup_path + outdir + '/' +
                         (os.path.basename(in_file))))
         backup_dir = os.path.dirname(backup_file)
         # Only backup files that contain data
