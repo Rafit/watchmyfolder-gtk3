@@ -38,6 +38,7 @@ if os.name == 'posix':
 
 STOP = False
 
+
 class WorkerThread(threading.Thread):
     """Worker Thread Class."""
     def __init__(self, notify_window):
@@ -114,7 +115,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         # Make a status icon
         icon = '/usr/share/pixmaps/watchmyfolder.png'
         self.statusicon = Gtk.StatusIcon.new_from_file(icon)
-        self.statusicon.connect('activate', self.status_clicked )
+        self.statusicon.connect('activate', self.status_clicked)
         self.statusicon.set_tooltip_text("Watch My Folder")
         # Start main function first
         self.statuslabel.set_text('Running')
@@ -127,7 +128,6 @@ class WATCHMYFOLDER(Gtk.Builder):
             self.window.show_all()
         # Start the Gtk main loop
         Gtk.main()
-
 
     def start_scan(self, *args):
         """ Start the scan process separate of the GUI """
@@ -299,7 +299,6 @@ class WATCHMYFOLDER(Gtk.Builder):
         return
 
 
-
 class WATCH(Process):
     """ Class that controls the scan process """
     def __init__(self):
@@ -340,9 +339,9 @@ class WATCH(Process):
         else:
             self.backup_enabled = False
         if self.conf.get('conf', 'skiptildefiles') == 'True':
-            self.skip_tilde =  True
+            self.skip_tilde = True
         else:
-            self.skip_tilde =  False
+            self.skip_tilde = False
         if self.conf.get('conf', 'skiphiddenfiles') == 'True':
             self.skip_hidden_files = True
         else:
@@ -396,7 +395,7 @@ class WATCH(Process):
         in_file = args[0]
         backup_path = args[1]
         insplit = os.path.dirname(in_file).split(self.slash)
-        orig_dir =  self.orig_dir.split(self.slash)
+        orig_dir = self.orig_dir.split(self.slash)
         outdir = ''
         # Remove the base folder from the backup base path
         for items in orig_dir:
@@ -491,7 +490,6 @@ class WATCH(Process):
                 print 'Opening: ' + input_string
                 self.watch_folder(backup_path, input_string)
         return
-
 
     def watch_folder(self, *args):
         """ Search recursively through folders looking for files """
@@ -620,4 +618,3 @@ class WATCH(Process):
 if __name__ == "__main__":
     GLib.threads_init()
     WATCHMYFOLDER()
-
