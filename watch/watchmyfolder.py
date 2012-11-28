@@ -33,17 +33,10 @@ from xdg.BaseDirectory import xdg_config_dirs
 from gi.repository import Gtk
 from gi.repository import GLib
 
-WINDOWOPEN = True
-STOP = False
-STARTED = False
-CONFIG = xdg_config_dirs[0] + '/watchmyfolder.conf'
-OS = os.name
-INSTALLPATH = '/usr/share/watchmyfolder/'
-if OS == 'nt':
-    SLASH = '\\'
-elif OS == 'posix':
+if os.name == 'posix':
     import socket
-    SLASH = '/'
+
+STOP = False
 
 class WorkerThread(threading.Thread):
     """Worker Thread Class."""
@@ -70,7 +63,8 @@ class WATCHMYFOLDER(Gtk.Builder):
     def __init__(self):
         """ ??? """
         self.builder = Gtk.Builder()
-        self.builder.add_from_file(INSTALLPATH + "watchmyfolder.ui")
+        self.builder.add_from_file('/usr/share/watchmyfolder/' +
+                                       "watchmyfolder.ui")
         # main window
         self.window = self.builder.get_object("main_window")
         self.statuslabel = self.builder.get_object("statuslabel")
@@ -92,6 +86,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.watchdeletecheck = self.builder.get_object('watchdeletecheck')
         self.applybutton = self.builder.get_object("applyconf")
         self.closebutton = self.builder.get_object("closeconf")
+        self.starthiddencheck = self.builder.get_object("starthiddencheck")
         self.inputfolder = None
         self.outputfolder = None
         self.skipfiles = None
@@ -102,6 +97,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.enableskipfile = None
         self.enablebackup = None
         self.enablewatchdelete = None
+        self.starthidden = False
         # main window actions
         self.window.connect("delete-event", self.delete_event)
         self.settingsbutton.connect("clicked", self.showconfig)
@@ -123,7 +119,8 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.statusicon = Gtk.StatusIcon.new_from_file(icon)
         self.statusicon.connect('activate', self.status_clicked )
         self.statusicon.set_tooltip_text("Watch My Folder")
-        #self.window.hide()
+        if self.starthidden:
+            self.window.hide()
         # Start main function first
         self.worker = None
         if not self.worker:
@@ -178,26 +175,22 @@ class WATCHMYFOLDER(Gtk.Builder):
 
     def delete_event(self, window, event):
         """ Hide the window then the close button is clicked """
-        global WINDOWOPEN
         # Don't delete; hide instead
         self.window.hide_on_delete()
-        WINDOWOPEN = False
         return True
  
 
     def status_clicked(self, status):
         """ hide and unhide the window when clicking the status icon """
-        global WINDOWOPEN
         # Unhide the window
-        if not WINDOWOPEN:
+        if not self.window.get_property("visible"):
             self.window.show_all()
-            WINDOWOPEN = True
-        elif WINDOWOPEN:
+        elif self.window.get_property("visible"):
             self.delete_event(self, self.window)
 
     def readconfig(self, *args):
         """ read config and load values """
-        self.conf.read(CONFIG)
+        self.conf.read(xdg_config_dirs[0] + '/watchmyfolder.conf')
         self.inputfolder = self.conf.get('conf', 'FolderPath')
         self.outputfolder = self.conf.get('conf', 'BackupPath')
         self.skipfiles = self.conf.get('conf', 'SkipFiles')
@@ -208,6 +201,7 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.enableskipfile = self.conf.get('conf', 'SkipHiddenFiles')
         self.enablebackup = self.conf.get('conf', 'BackupEnabled')
         self.enablewatchdelete = self.conf.get('conf', 'MonitorDeletion')
+        self.starthidden = self.conf.get('conf', 'AutoHide')
         if self.enablebackup == 'True':
             self.enablebackup = True
         else:
@@ -229,6 +223,10 @@ class WATCHMYFOLDER(Gtk.Builder):
             self.enableskipfolder = True
         else:
             self.enableskipfolder = False
+        if self.conf.get('conf', 'AutoHide') == 'True':
+            self.starthidden = True
+        else:
+            self.starthidden = False
         return
 
     def showconfig(self, *args):
@@ -244,12 +242,13 @@ class WATCHMYFOLDER(Gtk.Builder):
         self.tildecheck.set_active(self.enabletilde)
         self.hiddenfilecheck.set_active(self.enableskipfile)
         self.hiddenfoldercheck.set_active(self.enableskipfolder)
+        self.starthiddencheck.set_active(self.starthidden)
         self.confwindow.show()
         return
 
     def saveconf(self, *args):
         """ save any config changes and update live settings"""
-        self.conf.read(CONFIG)
+        self.conf.read(xdg_config_dirs[0] + '/watchmyfolder.conf')
         self.conf.set('conf', 'FolderPath', self.inputentry.get_text())
         self.conf.set('conf', 'BackupPath', self.backupentry.get_text())
         self.conf.set('conf', 'WaitTime', self.waittimeentry.get_text())
@@ -266,8 +265,10 @@ class WATCHMYFOLDER(Gtk.Builder):
                           self.hiddenfilecheck.get_active())
         self.conf.set('conf', 'SkipHiddenFiles',
                           self.hiddenfoldercheck.get_active())
+        self.conf.set('conf', 'AutoHide',
+                          self.starthiddencheck.get_active())
         # write to conf file
-        conffile = open(CONFIG, "w")
+        conffile = open(xdg_config_dirs[0] + '/watchmyfolder.conf', "w")
         self.conf.write(conffile)
         conffile.close()
         # reload new conf values
@@ -276,8 +277,8 @@ class WATCHMYFOLDER(Gtk.Builder):
 
     def checkconfig(self):
         """ create a default config if not available """
-        if not os.path.isfile(CONFIG):
-            conffile = open(CONFIG, "w")
+        if not os.path.isfile(xdg_config_dirs[0] + '/watchmyfolder.conf'):
+            conffile = open(xdg_config_dirs[0] + '/watchmyfolder.conf', "w")
             conffile.write("[conf]\n\n# Input Folder #\nFolderPath = /home/" +
                            "$USER\n# Destination Folder #\nBackupPath = " +
                            "$HOME/.backup/$HOSTNAME\n\n# Skip files with the" +
@@ -297,7 +298,8 @@ class WATCHMYFOLDER(Gtk.Builder):
                            "s for basic versioning #\nBackupEnabled = True\n" +
                            "MonitorDeletion = True\n\n# Linux style hidden f" +
                            "iles/folders #\nSkipTildeFiles = True\nSkipHidde" +
-                           "nFiles = True\nSkipHiddenFolders = True\n")
+                           "nFiles = True\nSkipHiddenFolders = True\nAutoHid" +
+                           "e = False")
             conffile.close()
         return
 
@@ -312,23 +314,23 @@ class WATCH(Process):
     """ Class that controls the scan process """
     def __init__(self):
         global STOP
-        global SLASH
         global ORIGINAL_DIR
-        global CONFIG
         if STOP:
             return
         # Set default file names according to OS
-        if OS == 'nt':
+        if os.name == 'nt':
             profile_var = os.getenv("userprofile")
             user_var = os.getenv("username")
             comp_var = os.getenv("computername")
             homeshare = os.getenv("homeshare")
             conf_file = 'config-windows.txt'
-        elif OS == 'posix':
+            self.slash = '\\'
+        elif os.name == 'posix':
             profile_var = os.getenv("HOME")
             user_var = os.getenv("USER")
             comp_var = socket.gethostname()
-            conf_file = CONFIG
+            conf_file = xdg_config_dirs[0] + '/watchmyfolder.conf'
+            self.slash = '/'
         else:
             STOP = True
         # Read config values
@@ -361,56 +363,55 @@ class WATCH(Process):
         else:
             self.skip_hidden_dirs = False
         self.destin = self.conf.get('conf', 'BackupPath')
-        self.ORIGINAL_DIR = self.conf.get('conf', 'FolderPath')
+        self.orig_dir = self.conf.get('conf', 'FolderPath')
         # Set OS specific config values
-        if OS == 'nt':
+        if os.name == 'nt':
             self.destin = self.destin.replace('%username%', 
                                                         user_var)
-            self.ORIGINAL_DIR = self.ORIGINAL_DIR.replace('%username%', 
+            self.orig_dir = self.orig_dir.replace('%username%', 
                                                           user_var)
             self.destin = self.destin.replace('%computername%', 
                                                         comp_var)
-            self.ORIGINAL_DIR = self.ORIGINAL_DIR.replace('%computername%', 
+            self.orig_dir = self.orig_dir.replace('%computername%', 
                                                           comp_var)
             self.destin = self.destin.replace('%userprofile%', profile_var)
-            self.ORIGINAL_DIR = self.ORIGINAL_DIR.replace('%userprofile%', 
+            self.orig_dir = self.orig_dir.replace('%userprofile%', 
                                                           profile_var)
             if not homeshare == None:
                 self.destin = self.destin.replace('%homeshare%', homeshare)
-                self.ORIGINAL_DIR = self.ORIGINAL_DIR.replace('%homeshare%', 
+                self.orig_dir = self.orig_dir.replace('%homeshare%', 
                                                               homeshare)
             self.skip_tilde = False
-        if OS == 'posix':
+        if os.name == 'posix':
             self.destin = self.destin.replace('$USER', user_var)
-            self.ORIGINAL_DIR = self.ORIGINAL_DIR.replace('$USER', user_var)
+            self.orig_dir = self.orig_dir.replace('$USER', user_var)
             self.destin = self.destin.replace('$HOSTNAME', comp_var)
-            self.ORIGINAL_DIR = self.ORIGINAL_DIR.replace('$HOSTNAME', comp_var)
+            self.orig_dir = self.orig_dir.replace('$HOSTNAME', comp_var)
             self.destin = self.destin.replace('$HOME', profile_var)
-            self.ORIGINAL_DIR = self.ORIGINAL_DIR.replace('$HOME', profile_var)
+            self.orig_dir = self.orig_dir.replace('$HOME', profile_var)
         # Attempt to make the backup path
         if not os.path.isdir(self.destin):
             try:
                 os.makedirs(self.destin)
             except:
-                self.destin = (profile_var + SLASH + '.backup' + SLASH + 
-                               'BACKUP')
-        if not os.path.isdir(self.ORIGINAL_DIR):
-            self.ORIGINAL_DIR = profile_var
+                self.destin = (profile_var + self.slash + '.backup' +
+                               self.slash + 'BACKUP')
+        if not os.path.isdir(self.orig_dir):
+            self.orig_dir = profile_var
         # Used to strip useless folders from the backup path
-        ORIGINAL_DIR = self.ORIGINAL_DIR
+        ORIGINAL_DIR = self.orig_dir
         
 
     def check_file(self, *args):
         """ File operation Function """
         global STOP
-        global SLASH
         global ORIGINAL_DIR
         if STOP:
             return
         in_file = args[0]
         backup_path = args[1]
-        insplit = os.path.dirname(in_file).split(SLASH)
-        orig_dir =  ORIGINAL_DIR.split(SLASH)
+        insplit = os.path.dirname(in_file).split(self.slash)
+        orig_dir =  ORIGINAL_DIR.split(self.slash)
         outdir = ''
         # Remove the base folder from the backup base path
         for items in orig_dir:
@@ -422,8 +423,8 @@ class WATCH(Process):
                         except ValueError:
                             pass
         for items in insplit:
-            outdir = outdir + SLASH + items
-        backup_file = (os.path.normpath(backup_path + outdir + SLASH + 
+            outdir = outdir + self.slash + items
+        backup_file = (os.path.normpath(backup_path + outdir + self.slash + 
                         (os.path.basename(in_file))))
         backup_dir = os.path.dirname(backup_file)
         # Only backup files that contain data
@@ -601,27 +602,23 @@ class WATCH(Process):
         global ORIGINAL_DIR
         if STOP:
             return
-        global STARTED
-        if not STARTED:
-            STARTED = True
-            while 1 and not STOP:
-                time.sleep(self.wait_time)
-                try:
-                    if not os.path.exists(self.destin):
-                        os.makedirs(self.destin)
-                    if not os.path.exists(self.ORIGINAL_DIR):
-                        os.makedirs(self.ORIGINAL_DIR)
-                    shutil.copystat(self.ORIGINAL_DIR, self.destin)
-                    self.watch_folder(self.destin, self.ORIGINAL_DIR)
-                    self.watch_deletions(self.destin, self.ORIGINAL_DIR)
-                except:
-                    # Skip error when directory is missing
-                    pass
-                try:
-                    print ''
-                except exceptions.AttributeError:
-                    pass
-            STARTED = False
+        while 1 and not STOP:
+            time.sleep(self.wait_time)
+            try:
+                if not os.path.exists(self.destin):
+                    os.makedirs(self.destin)
+                if not os.path.exists(self.orig_dir):
+                    os.makedirs(self.orig_dir)
+                shutil.copystat(self.orig_dir, self.destin)
+                self.watch_folder(self.destin, self.orig_dir)
+                self.watch_deletions(self.destin, self.orig_dir)
+            except:
+                # Skip error when directory is missing
+                pass
+            try:
+                print ''
+            except exceptions.AttributeError:
+                pass
 
 if __name__ == "__main__":
     GLib.threads_init()
