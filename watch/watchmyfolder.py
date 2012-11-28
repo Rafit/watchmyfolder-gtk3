@@ -70,7 +70,7 @@ class WATCHMYFOLDER(Gtk.Builder):
     def __init__(self):
         """ ??? """
         self.builder = Gtk.Builder()
-        self.builder.add_from_file(INSTALLPATH + "watch-my-folder.ui")
+        self.builder.add_from_file(INSTALLPATH + "watchmyfolder.ui")
         # main window
         self.window = self.builder.get_object("main_window")
         self.statuslabel = self.builder.get_object("statuslabel")
@@ -314,6 +314,7 @@ class WATCH(Process):
         global STOP
         global SLASH
         global ORIGINAL_DIR
+        global CONFIG
         if STOP:
             return
         # Set default file names according to OS
@@ -327,7 +328,7 @@ class WATCH(Process):
             profile_var = os.getenv("HOME")
             user_var = os.getenv("USER")
             comp_var = socket.gethostname()
-            conf_file = '/usr/share/watchmyfolder/config-linux.txt'
+            conf_file = CONFIG
         else:
             STOP = True
         # Read config values
