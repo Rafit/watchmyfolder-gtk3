@@ -29,13 +29,16 @@ import ConfigParser
 import threading
 
 from multiprocessing import Process
+from xdg.BaseDirectory import xdg_config_dirs
 from gi.repository import Gtk
 from gi.repository import GLib
 
 WINDOWOPEN = True
 STOP = False
 STARTED = False
+CONFIG = xdg_config_dirs[0] + '/watchmyfolder.conf'
 OS = os.name
+INSTALLPATH = '/usr/share/watchmyfolder/'
 if OS == 'nt':
     SLASH = '\\'
 elif OS == 'posix':
@@ -57,30 +60,67 @@ class WorkerThread(threading.Thread):
         return None
 
     def run(self):
-        watch.main(watch())
+        """ run background thread """
+        WATCH.main(WATCH())
         threading.Thread.__init__(self)
 
 
-class watch_my_folder(Gtk.Builder):
+class WATCHMYFOLDER(Gtk.Builder):
     """ Initialise Main Window """
     def __init__(self):
+        """ ??? """
         self.builder = Gtk.Builder()
-        self.builder.add_from_file("/usr/share/watchmyfolder/watch-my-folder.ui")
+        self.builder.add_from_file(INSTALLPATH + "watch-my-folder.ui")
+        # main window
         self.window = self.builder.get_object("main_window")
-        self.window.set_title("Watch My Folder")
-        self.window.connect("delete-event", self.delete_event)
         self.statuslabel = self.builder.get_object("statuslabel")
-        self.statuslabel.set_text('Running')
+        self.settingsbutton = self.builder.get_object("settingsbutton")
         self.quitbutton = self.builder.get_object("quitbutton")
-        self.quitbutton.connect("clicked", self.quit)
         self.startbutton = self.builder.get_object("startbutton")
-        self.startbutton.connect("clicked", self.start_scan)
         self.stopbutton = self.builder.get_object("stopbutton")
+        # conf window
+        self.confwindow = self.builder.get_object("config_window")
+        self.inputentry = self.builder.get_object('inputentry')
+        self.backupentry = self.builder.get_object('backupentry')
+        self.skipfilesentry = self.builder.get_object('skipfilesentry')
+        self.skipfoldersentry = self.builder.get_object('skipfoldersentry')
+        self.waittimeentry = self.builder.get_object('waittimeentry')
+        self.hiddenfilecheck = self.builder.get_object('hiddenfilecheck')
+        self.hiddenfoldercheck = self.builder.get_object('hiddenfoldercheck')
+        self.tildecheck = self.builder.get_object('tildecheck')
+        self.backupcheck = self.builder.get_object('backupcheck')
+        self.watchdeletecheck = self.builder.get_object('watchdeletecheck')
+        self.applybutton = self.builder.get_object("applyconf")
+        self.closebutton = self.builder.get_object("closeconf")
+        self.inputfolder = None
+        self.outputfolder = None
+        self.skipfiles = None
+        self.skipfolders = None
+        self.waittime = None
+        self.enabletilde = None
+        self.enableskipfolder = None
+        self.enableskipfile = None
+        self.enablebackup = None
+        self.enablewatchdelete = None
+        # main window actions
+        self.window.connect("delete-event", self.delete_event)
+        self.settingsbutton.connect("clicked", self.showconfig)
+        self.quitbutton.connect("clicked", self.quit)
+        self.startbutton.connect("clicked", self.start_scan)
         self.stopbutton.connect("clicked", self.stop_scan)
-        # Show all of the stuff
+        # config window actions
+        self.applybutton.connect("clicked", self.saveconf)
+        self.closebutton.connect("clicked", self.closeconf)
+        # get config info
+        self.checkconfig()
+        self.conf = ConfigParser.RawConfigParser()
+        self.readconfig()
+        # prep and show main window
+        self.statuslabel.set_text('Running')
         self.window.show_all()
         # Make a status icon
-        self.statusicon = Gtk.StatusIcon.new_from_file('/usr/share/pixmaps/watchmyfolder.png')
+        icon = '/usr/share/pixmaps/watchmyfolder.png'
+        self.statusicon = Gtk.StatusIcon.new_from_file(icon)
         self.statusicon.connect('activate', self.status_clicked )
         self.statusicon.set_tooltip_text("Watch My Folder")
         #self.window.hide()
@@ -105,8 +145,6 @@ class watch_my_folder(Gtk.Builder):
         except RuntimeError:
             # Error will occur when trying to restart a started thread
             print 'already running'
-            pass
-            
 
     def stop_scan(self, *args):
         """ Stop the scan process """
@@ -138,7 +176,7 @@ class watch_my_folder(Gtk.Builder):
         return False
 
 
-    def delete_event(self,window, event):
+    def delete_event(self, window, event):
         """ Hide the window then the close button is clicked """
         global WINDOWOPEN
         # Don't delete; hide instead
@@ -157,8 +195,120 @@ class watch_my_folder(Gtk.Builder):
         elif WINDOWOPEN:
             self.delete_event(self, self.window)
 
+    def readconfig(self, *args):
+        """ read config and load values """
+        self.conf.read(CONFIG)
+        self.inputfolder = self.conf.get('conf', 'FolderPath')
+        self.outputfolder = self.conf.get('conf', 'BackupPath')
+        self.skipfiles = self.conf.get('conf', 'SkipFiles')
+        self.skipfolders = self.conf.get('conf', 'SkipFolders')
+        self.waittime = int(self.conf.get('conf', 'WaitTime'))
+        self.enabletilde = self.conf.get('conf', 'SkipTildeFiles')
+        self.enableskipfolder = self.conf.get('conf', 'SkipHiddenFolders')
+        self.enableskipfile = self.conf.get('conf', 'SkipHiddenFiles')
+        self.enablebackup = self.conf.get('conf', 'BackupEnabled')
+        self.enablewatchdelete = self.conf.get('conf', 'MonitorDeletion')
+        if self.enablebackup == 'True':
+            self.enablebackup = True
+        else:
+            self.enablebackup = False
+        if self.enablewatchdelete == 'True':
+            self.enablewatchdelete = True
+        else:
+            self.enablewatchdelete = False
 
-class watch(Process):
+        if self.enabletilde == 'True':
+            self.enabletilde = True
+        else:
+            self.enabletilde = False
+        if self.enableskipfile == 'True':
+            self.enableskipfile = True
+        else:
+            self.enableskipfile = False
+        if self.enableskipfolder == 'True':
+            self.enableskipfolder = True
+        else:
+            self.enableskipfolder = False
+        return
+
+    def showconfig(self, *args):
+        """ fill and show the config window """
+        self.readconfig()
+        self.inputentry.set_text(self.inputfolder)
+        self.backupentry.set_text(self.outputfolder)
+        self.waittimeentry.set_text(str(self.waittime))
+        self.skipfilesentry.set_text(self.skipfiles)
+        self.skipfoldersentry.set_text(self.skipfolders)
+        self.backupcheck.set_active(self.enablebackup)
+        self.watchdeletecheck.set_active(self.enablewatchdelete)
+        self.tildecheck.set_active(self.enabletilde)
+        self.hiddenfilecheck.set_active(self.enableskipfile)
+        self.hiddenfoldercheck.set_active(self.enableskipfolder)
+        self.confwindow.show()
+        return
+
+    def saveconf(self, *args):
+        """ save any config changes and update live settings"""
+        self.conf.read(CONFIG)
+        self.conf.set('conf', 'FolderPath', self.inputentry.get_text())
+        self.conf.set('conf', 'BackupPath', self.backupentry.get_text())
+        self.conf.set('conf', 'WaitTime', self.waittimeentry.get_text())
+        self.conf.set('conf', 'SkipFiles', self.skipfilesentry.get_text())
+        self.conf.set('conf', 'SkipFolders',
+                          self.skipfoldersentry.get_text())
+        self.conf.set('conf', 'SkipTildeFiles',
+                          str(self.tildecheck.get_active()))
+        self.conf.set('conf', 'BackupEnabled',
+                          self.backupcheck.get_active())
+        self.conf.set('conf', 'MonitorDeletion',
+                          str(self.watchdeletecheck.get_active()))
+        self.conf.set('conf', 'SkipHiddenFolders',
+                          self.hiddenfilecheck.get_active())
+        self.conf.set('conf', 'SkipHiddenFiles',
+                          self.hiddenfoldercheck.get_active())
+        # write to conf file
+        conffile = open(CONFIG, "w")
+        self.conf.write(conffile)
+        conffile.close()
+        # reload new conf values
+        self.readconfig()
+        return
+
+    def checkconfig(self):
+        """ create a default config if not available """
+        if not os.path.isfile(CONFIG):
+            conffile = open(CONFIG, "w")
+            conffile.write("[conf]\n\n# Input Folder #\nFolderPath = /home/" +
+                           "$USER\n# Destination Folder #\nBackupPath = " +
+                           "$HOME/.backup/$HOSTNAME\n\n# Skip files with the" +
+                           " following file types #\nSkipFiles = .backup " +
+                           ".hdrive .pst .ost .mp3 .avi .iso .mpg .msi .exe " +
+                           ".mpeg .aac .wav .mp4 .wma .mov .mod .mts .tmp " +
+                           ".dat .xbel .old .deleted .db .xsession-errors " +
+                           ".bash_history .esd_auth .lock .ICEauthority " +
+                           ".pulse-cookie application_state\n\n# Skip fold" +
+                           "ers that contain the following paths #\nSkipFol" +
+                           "ders =    /drive_c    /dosdevices    /.config/go" +
+                           "ogle-chrome/Default    /.cache    /.csync    /.m" +
+                           "ozilla/firefox    /.fontconfig    /.thumbnails  " +
+                           "  /.local/share/Trash    /.backup    /.gvfs    /" +
+                           ".dbus\n\n# Time to wait between opening the next" +
+                           " folder #\nWaitTime = 3\n\n# Create Shadow Copie" +
+                           "s for basic versioning #\nBackupEnabled = True\n" +
+                           "MonitorDeletion = True\n\n# Linux style hidden f" +
+                           "iles/folders #\nSkipTildeFiles = True\nSkipHidde" +
+                           "nFiles = True\nSkipHiddenFolders = True\n")
+            conffile.close()
+        return
+
+    def closeconf(self, *args):
+        """ hide the config window """
+        self.confwindow.hide()
+        return
+
+
+
+class WATCH(Process):
     """ Class that controls the scan process """
     def __init__(self):
         global STOP
@@ -279,7 +429,7 @@ class watch(Process):
         if os.stat(in_file)[6] == 0:
             pass
         if self.skip_hidden_files and os.path.split(in_file)[-1][0] == '.':
-                print 'Skipping: ' + in_file
+            print 'Skipping: ' + in_file
         # Copy file if it doesn't exist in backup location
         elif not os.path.isfile(backup_file):
             if not os.path.exists(backup_dir):
@@ -380,7 +530,7 @@ class watch(Process):
                                     skipme = True
                             elif self.skip_tilde:
                                 if items[-1] == '~':
-                                    skipme=True
+                                    skipme = True
                     # Run check_file if a file is found
                     if (os.path.isfile(os.path.join(input_dir, items)) and 
                             not skipme):
@@ -412,7 +562,9 @@ class watch(Process):
                 tmp_source = os.path.join(source_folder, items)
                 skip_list = ['.old', '.deleted']
                 # check for deletion if a file is found
-                if os.path.isfile(tmp_backup) and not os.path.isfile(tmp_source):
+                check1 = os.path.isfile(tmp_backup)
+                check2 = os.path.isfile(tmp_source)
+                if check1 and not check2:
                     if not os.path.splitext(items)[1] in skip_list:
                         new_file = tmp_backup + '.deleted'
                         try:
@@ -423,7 +575,9 @@ class watch(Process):
                             pass
                 if (os.path.isdir(tmp_backup)):
                     try:
-                        if not os.path.isdir(tmp_source) and not tmp_backup[-8:] == '.deleted':
+                        check1 = os.path.isdir(tmp_source)
+                        check2 = tmp_backup[-8:] == '.deleted'
+                        if not check1 and not check2:
                             # rename folders that don't exist
                             removed_dir = tmp_backup + '.deleted'
                             print 'Renaming deleted folder: ' + removed_dir
@@ -443,6 +597,7 @@ class watch(Process):
     def main(self, *args):
         """ Main Function """
         global STOP
+        global ORIGINAL_DIR
         if STOP:
             return
         global STARTED
@@ -469,5 +624,5 @@ class watch(Process):
 
 if __name__ == "__main__":
     GLib.threads_init()
-    watch_my_folder()
+    WATCHMYFOLDER()
 

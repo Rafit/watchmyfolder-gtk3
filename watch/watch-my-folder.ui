@@ -3,7 +3,6 @@
   <!-- interface-requires gtk+ 3.0 -->
   <object class="GtkWindow" id="config_window">
     <property name="can_focus">False</property>
-    <property name="type">popup</property>
     <property name="title" translatable="yes">Watch My Folder: Config</property>
     <property name="modal">True</property>
     <property name="window_position">center-on-parent</property>
@@ -43,7 +42,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="entry1">
+              <object class="GtkEntry" id="inputentry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
@@ -80,7 +79,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="entry2">
+              <object class="GtkEntry" id="backupentry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
@@ -118,7 +117,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="entry3">
+              <object class="GtkEntry" id="skipfilesentry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
@@ -156,7 +155,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="entry4">
+              <object class="GtkEntry" id="skipfoldersentry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
@@ -195,11 +194,10 @@
               </packing>
             </child>
             <child>
-              <object class="GtkSpinButton" id="waittimespinbutton">
+              <object class="GtkEntry" id="waittimeentry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
-                <property name="invisible_char_set">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -232,7 +230,7 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkCheckButton" id="hiddenfilecheckbutton">
+              <object class="GtkCheckButton" id="hiddenfilecheck">
                 <property name="label" translatable="yes">Skip Hidden Files</property>
                 <property name="width_request">150</property>
                 <property name="visible">True</property>
@@ -248,7 +246,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkCheckButton" id="hiddenfoldercheckbutton">
+              <object class="GtkCheckButton" id="hiddenfoldercheck">
                 <property name="label" translatable="yes">Skip Hidden Folders</property>
                 <property name="width_request">150</property>
                 <property name="visible">True</property>
@@ -264,7 +262,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkCheckButton" id="tildecheckbutton">
+              <object class="GtkCheckButton" id="tildecheck">
                 <property name="label" translatable="yes">Skip Tilde Files</property>
                 <property name="width_request">150</property>
                 <property name="visible">True</property>
@@ -291,7 +289,7 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkCheckButton" id="backupcheckbutton">
+              <object class="GtkCheckButton" id="backupcheck">
                 <property name="label" translatable="yes">File Versioning</property>
                 <property name="width_request">150</property>
                 <property name="visible">True</property>
@@ -307,7 +305,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkCheckButton" id="watchdeletecheckbutton">
+              <object class="GtkCheckButton" id="watchdeletecheck">
                 <property name="label" translatable="yes">Mark Deleted Files</property>
                 <property name="width_request">150</property>
                 <property name="visible">True</property>
@@ -426,6 +424,8 @@
   </object>
   <object class="GtkWindow" id="main_window">
     <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Watch My Folder</property>
+    <property name="icon">/usr/share/pixmaps/watchmyfolder.png</property>
     <child>
       <object class="GtkBox" id="box2">
         <property name="visible">True</property>
