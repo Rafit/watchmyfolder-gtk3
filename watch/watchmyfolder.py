@@ -352,10 +352,16 @@ class WATCH(Process):
         # parse through variables
         self.destin = self.destin.replace('$USER', user_var)
         self.orig_dir = self.orig_dir.replace('$USER', user_var)
+        self.destin = self.destin.replace('$user', user_var)
+        self.orig_dir = self.orig_dir.replace('$user', user_var)
         self.destin = self.destin.replace('$HOSTNAME', comp_var)
         self.orig_dir = self.orig_dir.replace('$HOSTNAME', comp_var)
+        self.destin = self.destin.replace('$hostname', comp_var)
+        self.orig_dir = self.orig_dir.replace('$hostname', comp_var)
         self.destin = self.destin.replace('$HOME', profile_var)
         self.orig_dir = self.orig_dir.replace('$HOME', profile_var)
+        self.destin = self.destin.replace('$home', profile_var)
+        self.orig_dir = self.orig_dir.replace('$home', profile_var)
         # Attempt to make the backup path
         if not os.path.isdir(self.destin):
             try:
